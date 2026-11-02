@@ -29,5 +29,35 @@ check "Входящий трафик запрещен по умолчанию" "
 echo "[3] Учётные записи"
 awk -F: '$3>=1000 && $3<65534 {printf " %s (uid=%s)\n",$1,$3}' /etc/passwd
 
+echo "[4] Веб-сервер"
+# а) Служба nginx активна
+check "Служба nginx активна" "active" "$(systemctl is-active nginx)"
+
+# б) Конфигурация nginx синтаксически корректна
+if sudo nginx -t >/dev/null 2>&1; then
+    nginx_test="0"
+else
+    nginx_test="1"
+fi
+check "Конфигурация nginx корректна" "0" "$nginx_test"
+
+# в) Сертификат истекает не ранее чем через 30 дней
+if sudo openssl x509 -checkend 2592000 -noout -in /etc/ssl/certs/devops.crt >/dev/null 2>&1; then
+    cert_valid="0"
+else
+    cert_valid="1"
+fi
+check "Сертификат действителен более 30 дней" "0" "$cert_valid"
+
+# г) Нет файлов с правами на запись всем И права ключа = 600
+if [[ -z "$(sudo find /var/www/devops-site -perm -o+w)" ]]; then
+    no_writable="0"
+else
+    no_writable="1"
+fi
+check "Нет файлов, доступных для записи всем" "0" "$no_writable"
+
+check "Права ключа = 600" "600" "$(sudo stat -c '%a' /etc/ssl/private/devops.key)"
+
 echo "Пройдено: $PASS, не пройдено: $FAIL"
 [[ $FAIL -eq 0 ]] && exit 0 || exit 1

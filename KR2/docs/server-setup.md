@@ -53,4 +53,19 @@
 *   **01-clean-install:** Создана и настроена виртуальная машина, проверены все адреса
 *   **02-keys-configured:** Создан после настройки SSH-ключей и конфигурации файла ~/.ssh/config.
 *   **03-ssh-hardened:** Создан после ужесточения конфигурации SSH (отключение паролей, смена порта).
+*   **04-nginx-https** Создан после формирования сертификата для https и настроек пернаправления http на https
 
+## 8. Веб-сервер
+*   **Устанавливаемый пакет:** `nginx` (версия 1.24.0 в Ubuntu 24.04)
+*   **Путь к конфигурации ресурса:** `/etc/nginx/sites-available/devops-site`
+    *   Активация выполнена через символическую ссылку: `/etc/nginx/sites-enabled/devops-site`
+    *   Дефолтный конфиг `/etc/nginx/sites-enabled/default` удален.
+*   **Каталог ресурса:** `/var/www/devops-site`
+    *   **Владелец:** `devops:devops`
+    *   **Права:** `755` для каталога, `644` для файлов (обеспечивается флагом `--chmod=D755,F644` в скрипте деплоя).
+*   **Пути к сертификату и ключу:**
+    *   **Сертификат:** `/etc/ssl/certs/devops.crt` (права `644`, владелец `root:root`)
+    *   **Ключ:** `/etc/ssl/private/devops.key` (права `640`, владелец `root:ssl-cert` для доступа Nginx)
+*   **Команда формирования сертификата:** 
+    `sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/ssl/private/devops.key -out /etc/ssl/certs/devops.crt -subj "/CN=devops.local" -addext "subjectAltName=DNS:devops.local"`
+*   **Срок действия сертификата:** 365 дней.
